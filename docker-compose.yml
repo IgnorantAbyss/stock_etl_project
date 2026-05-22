@@ -1,0 +1,43 @@
+# docker-compose.yml
+# 這個檔案用來定義本專案需要的服務。
+# 第一階段我們只啟動 PostgreSQL，不急著把 Python、Airflow、Streamlit 都放進來。
+
+services:
+  postgres:
+    # 使用官方 PostgreSQL image。
+    # 先固定 major version，避免不同電腦拉到不同版本造成行為差異。
+    image: postgres:16
+
+    # container 名稱，方便你用 docker ps 或 docker logs 辨識。
+    container_name: stock_etl_postgres
+
+    # 如果 PostgreSQL container 異常停止，Docker 會自動重啟。
+    restart: unless-stopped
+
+    # 從 .env 讀取資料庫設定，避免帳密直接寫死在 docker-compose.yml。
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+
+    # port mapping：
+    # 左邊 5432 是你 Windows 主機的 port。
+    # 右邊 5432 是 container 裡 PostgreSQL 的 port。
+    # 所以 DBeaver 可以用 localhost:5432 連進去。
+    ports:
+      - "5432:5432"
+
+    # volumes：
+    # 第一個掛載保存 PostgreSQL 實體資料。
+    # 第二個掛載初始化 SQL，container 第一次建立資料庫時會自動執行。
+    volumes:
+      - ./.docker/postgres-data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+
+    # 健康檢查：
+    # 用 pg_isready 檢查 PostgreSQL 是否可以接受連線。
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5

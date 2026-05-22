@@ -1,0 +1,25 @@
+# Python 快取
+__pycache__/
+*.pyc
+
+# 虛擬環境
+.venv/
+venv/
+
+# 不上傳設定檔
+.env
+
+# Docker PostgreSQL 實體資料
+.docker/
+
+# 原始資料與中間資料，之後視情況決定是否提交 sample
+data/raw/
+data/processed/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

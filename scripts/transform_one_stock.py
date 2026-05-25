@@ -2,6 +2,7 @@
 
 # 匯入 yfinance，用來從 Yahoo Finance 取得股票行情資料。
 import yfinance as yf
+import pandas as pd
 
 
 # 指定股票代號。
@@ -51,14 +52,17 @@ if df.columns.nlevels > 1:
 #
 # 這行是把欄位軸名稱清掉。
 # 注意：這不是刪除資料欄位，只是清除顯示用的欄位軸名稱。
-df.columns.name = 'index'
+df.columns.name = None
+print("\n=== 修改columns.name ===")
+print(df.head())
 
 
 # 原本日期在 df.index 裡。
 # 先把 index 的名稱設定成 trade_date。
 # 這樣等一下 reset_index() 後，日期欄位就會直接叫 trade_date。
 df.index.name = "trade_date"
-
+print("\n=== 修改index.name ===")
+print(df.head())
 
 # reset_index() 會把 index 變成一般欄位。
 # 原本：
@@ -67,7 +71,8 @@ df.index.name = "trade_date"
 # 轉換後：
 # trade_date 會成為一般欄位。
 df = df.reset_index()
-
+print("\n=== 轉換trade_date為一般欄位 ===")
+print(df.head())
 
 # 把 yfinance 的欄位名稱改成我們資料庫 daily_prices 使用的欄位名稱。
 # 這是 Transform 的一部分：把外部資料來源格式改成內部標準格式。
@@ -120,17 +125,21 @@ df = df[
     ]
 ]
 
-
 # 印出整理後資料。
 print("\n=== 整理後資料 ===")
 print(df.head())
 
 
-# 印出欄位名稱，確認已經沒有 Price 這個欄位軸名稱。
-print("\n=== 整理後欄位 ===")
-print(df.columns)
 
+from validators.daily_price_validator import validate_daily_prices
+validate_daily_prices(df)
 
-# 印出欄位型態，確認價格、成交量、日期目前的資料型態。
-print("\n=== 欄位型態 ===")
-print(df.dtypes)
+print("資料品質檢查通過，可以進入下一步 Load。")
+
+from loaders.daily_price_loader import test_database_connection, load_daily_prices
+print(test_database_connection())
+
+inserted_count = load_daily_prices(df)
+
+print(f"資料寫入完成，共寫入 {inserted_count} 筆資料。")
+

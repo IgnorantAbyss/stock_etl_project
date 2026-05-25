@@ -6,8 +6,13 @@ name = "pypi"
 [packages]
 yfinance = "*"
 pandas = "*"
+sqlalchemy = "*"
+psycopg2-binary = "*"
+python-dotenv = "*"
+pydantic-settings = "*"
 
 [dev-packages]
+ipykernel = "*"
 
 [requires]
 python_version = "3.12"

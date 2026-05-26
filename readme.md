@@ -423,6 +423,8 @@ ticker + trade_date 是自然主鍵。
 同一支股票在同一個交易日只應該有一筆每日行情資料。
 pandas 的 row index 不需要存進資料庫。
 如果未來需要資料庫內部流水號，可以另外設計 id，但第一版不需要。
+ingested_at 目前使用 PostgreSQL server time，Docker 環境通常為 UTC；
+後續 Dashboard 顯示時再轉換為 Asia/Taipei。
 ```
 
 ---
@@ -919,6 +921,11 @@ ON CONFLICT (ticker, trade_date) DO UPDATE
 
 ```text
 完成單一股票 OHLCV Extract → Transform → Validate → Load → Upsert 流程，支援資料重跑與主鍵去重。
+```
+
+### Upsert筆記
+```text
+excluded只是一種取得 這筆insert衝突的資料的方法 如果有其他方法取得 也可以直接寫入 table.c是當前已存在資料 is distinct from 是SQL用來判斷是否相等的方式 用來跟這筆衝突的資料做對比 如果有相左 就更新
 ```
 
 ---

@@ -3,7 +3,7 @@ from sqlalchemy import select
 from db.database import SessionLocal
 from db.models import DailyPrice
 
-
+# ORM僅作查詢 當前資料結構為data frame 使用迴圈逐列加入資料庫反而失去效率
 def main():
     # 建立一個資料庫 session
     with SessionLocal() as session:

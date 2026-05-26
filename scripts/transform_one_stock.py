@@ -136,10 +136,25 @@ validate_daily_prices(df)
 
 print("資料品質檢查通過，可以進入下一步 Load。")
 
-from loaders.daily_price_loader import test_database_connection, load_daily_prices
-print(test_database_connection())
+# from loaders.daily_price_loader import test_database_connection, load_daily_prices
+# print(test_database_connection())
 
-inserted_count = load_daily_prices(df)
+# inserted_count = load_daily_prices(df)
 
-print(f"資料寫入完成，共寫入 {inserted_count} 筆資料。")
+# print(f"資料寫入完成，共寫入 {inserted_count} 筆資料。")
 
+from loaders.daily_price_loader import upsert_daily_prices
+
+affect_rows = upsert_daily_prices(df)
+for row in affect_rows:
+    print('ticker:',row.ticker)
+    print('trade_date:',row.trade_date)
+    print('open_price:',row.open_price)
+    print('high_price:',row.high_price)
+    print('low_price:',row.low_price)
+    print('close_price:',row.close_price)
+    print('adjusted_close:',row.adjusted_close)
+    print('volume:',row.volume)
+    print('source:',row.source)
+    print('ingested_at:',row.ingested_at)
+    print('=======================================')

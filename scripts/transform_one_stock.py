@@ -1,5 +1,3 @@
-# scripts/transform_one_stock.py
-
 # 匯入 yfinance，用來從 Yahoo Finance 取得股票行情資料。
 import yfinance as yf
 import pandas as pd

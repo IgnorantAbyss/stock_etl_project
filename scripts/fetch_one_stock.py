@@ -28,6 +28,7 @@ df = yf.download(
 # 觀察 yfinance 回傳的資料欄位與資料格式。
 print("=== 前 5 筆資料 ===")
 print(df.head())
+print(df.head()['ticker'])
 
 
 # 印出欄位名稱。

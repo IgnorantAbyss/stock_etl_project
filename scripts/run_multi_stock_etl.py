@@ -1,3 +1,5 @@
+from datetime import date
+
 from extractors.yfinance_extractor import yfinance_extract
 from transformers.daily_price_transformer import daily_price_transform
 from validators.daily_price_validator import validate_daily_prices
@@ -7,6 +9,11 @@ from loaders.daily_price_loader import upsert_daily_prices
 def print_etl_summary(summary):
     # 印出批次任務摘要標題
     print("\n========== Multi Stock ETL Summary ==========")
+
+    if summary['start_date']:
+        print('Extract起始日:', summary['start_date'])
+    if summary['end_date']:
+        print('Extract結束日:', summary['end_date'])
 
     # 顯示本次預計處理的 ticker 數量
     print(f"Total tickers: {summary['total_tickers']}")
@@ -34,7 +41,8 @@ def print_etl_summary(summary):
         print("\nFailed:")
         for ticker, reason in summary["failed_tickers"].items():
             print(f"- {ticker}: {reason}")
-
+    
+    
     # 印出批次任務摘要結尾
     print("============================================\n")
 
@@ -43,6 +51,18 @@ def main():
     # 建立本次批次 ETL 要處理的 ticker 清單
     tickers = ["TSM", "FAKE123", "AAPL", "MSFT", "NVDA"]
 
+    
+
+    # Extract：逐支 ticker 抓取 yfinance 原始資料
+    start_date = "2026-01-01"
+    end_date = ""
+    effective_end_date = end_date or date.today().strftime("%Y-%m-%d")
+
+    dfs, failed_tickers = yfinance_extract(
+        tickers=tickers,
+        start_date=start_date,
+        end_date=effective_end_date,
+    )
     # 建立本次 ETL 任務摘要
     summary = {
         "total_tickers": len(tickers),
@@ -51,10 +71,9 @@ def main():
         "raw_rows_by_ticker": {},
         "transformed_rows": 0,
         "affected_rows": 0,
+        "start_date": start_date,
+        "end_date": effective_end_date,
     }
-
-    # Extract：逐支 ticker 抓取 yfinance 原始資料
-    dfs, failed_tickers = yfinance_extract(tickers)
 
     # 記錄 Extract 失敗 ticker
     summary["failed_tickers"] = failed_tickers

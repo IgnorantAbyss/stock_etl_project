@@ -1,0 +1,71 @@
+第一階段
+以docker compose 建立postgre SQL
+技術要點:
+1. .env 讀取資料庫設定，避免帳密直接寫死在 docker-compose.yml
+2. 以volumes掛載DB資料以及初始化設定
+3. 使用 db/init/001_create_tables.sql 初始化資料表 schema
+4. 使用 bind mount 保存 PostgreSQL 實體資料，container 刪除後資料仍保留
+5. 使用 .gitignore 排除 .env、.docker/、data/raw/、data/processed/
+6. 使用 DBeaver 驗證資料庫、schema、table 是否建立成功
+
+目的性:
+可重現環境
+資料持久化
+敏感資訊管理
+本機開發與 Git 管理邊界
+
+第二階段
+使用yfinance抓取單一股票資料並轉換，建立簡易的資料validator
+技術要點:
+1. 理解並MultiIndex資料結構
+	當前處理方式為將level 1的ticker drop並將Date index reset為一般欄位
+2. 將 yfinance 欄位名稱轉換成 daily_prices schema 欄位
+3. 補上 ticker 與 source 欄位，保留資料來源追蹤能力
+4. 將 trade_date 從 datetime 轉成 date，符合資料表 DATE 型別
+5. 建立 validate_daily_prices，檢查必要欄位、空值、OHLC 價格邏輯、volume、ticker + trade_date 重複
+6. 將 validator 獨立成模組，讓後續單支股票、多支股票、Airflow task 都能重用
+
+目的性:
+把 raw data 轉成可入庫的標準化資料模型
+
+第三階段
+使用upsert將資料存入postgre 
+技術要點:
+1 使用dataframe功能to_dict(orient="records")，將每一列資料轉換為一個dict 裝在list中
+2 了解upsert在python中的意義與使用方式:
+	.excluded.欄位名稱可以保留因insert主鍵衝突時的資料，供後續更新或是條件判斷使用
+	.is_distinct_from用來比較資料是否相同，避免與NULL比較
+	.on_conflict_do_update設定主鍵、衝突時的語法及更新條件
+
+3. 使用 PostgreSQL 複合主鍵 ticker + trade_date 作為衝突判斷依據
+4. 使用 SQLAlchemy Core 處理批次 upsert，而不是 ORM for-loop 寫入，提升批次資料寫入效率
+5. 只在 open/high/low/close/adjusted_close/volume/source 任一欄位不同時才 UPDATE，避免重跑時無意義刷新 ingested_at
+6. 使用 RETURNING 回傳本次實際新增或更新的資料列，方便 debug 與觀察 ETL 結果
+
+目的性:
+使用 SQLAlchemy Core 實作 PostgreSQL ON CONFLICT upsert，以 ticker + trade_date 作為衝突鍵。當資料不存在時新增；
+當資料已存在且欄位內容不同時才更新，避免 ETL 重跑造成無意義 update，並透過 RETURNING 回傳本次實際變動資料。
+	
+第四階段
+多股票資料抓取
+技術要點:
+1. 修改Extract與Tansform資料結構，建立多股票資料dict，以ticker為鍵、dataframe為值儲存多支股票資料
+2. 以for迴圈取出ticker與原始dataframe進行處理，最後使用.concat合併資料後回傳
+3. Extract 階段加入 failed_tickers，記錄單一 ticker 抓取失敗原因
+4. 單一 ticker 失敗不影響整批 ETL 任務
+5. Transform 階段使用 raw_df.copy()，避免直接修改原始資料
+6. 使用 frames list 收集各 ticker DataFrame，最後一次 pd.concat，避免迴圈中反覆 concat
+7. 最後合併成一張 long-format daily_prices DataFrame，交給共用 validator 與 upsert loader
+
+亮點: 錯誤隔離避免其中一隻失敗導致全部無法執行
+
+第五階段
+批次 ETL 任務報告(Observability)雛形
+extractor：回傳成功資料與失敗 ticker
+transformer：回傳整理後 DataFrame
+validator：檢查資料品質
+loader：回傳 affected rows
+script：統整並印出任務摘要
+
+
+目的性:建立多股票批次 ETL 任務摘要，統計成功與失敗 ticker、原始資料筆數、轉換筆數與實際 upsert 影響筆數，提升批次流程可觀察性與除錯能力。

@@ -75,3 +75,29 @@ script：統整並印出任務摘要
 使用argparse建立CLI參數解析器
 
 目的性:使用 terminal 傳參數，避免必須修改程式碼才可更換參數測試
+
+第七階段
+- 建立 technical_indicators(技術指標) 資料表，主鍵:ticker + trade_date
+	欄位					意義
+	ticker				股票代號
+	trade_date			交易日
+	sma_5				5 日簡單移動平均
+	sma_20				20 日簡單移動平均
+	sma_60				60 日簡單移動平均
+	volume_avg_20d		20 日平均成交量
+	volume_ratio_20d	當日成交量 / 20 日平均成交量
+	source				指標來源，例如 daily_prices
+	created_at			第一次建立時間
+	updated_at			最近一次更新時間
+
+- 技術指標 Transform
+技術要點:
+1. SMA 是：Simple Moving Average 簡單移動平均
+2. 理解pandas groupby與transform，並以此計算SMA
+
+目的性: 從原始資料transform技術指標
+
+第八階段
+建立technical_indicators 的 Validate
+
+目的性: 對技術指標衍生表建立入庫前資料品質檢查，允許移動平均前期合理空值，同時檢查主鍵唯一性、必要欄位、來源追溯與成交量衍生指標合理性。

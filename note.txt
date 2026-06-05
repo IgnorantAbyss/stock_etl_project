@@ -67,5 +67,11 @@ validator：檢查資料品質
 loader：回傳 affected rows
 script：統整並印出任務摘要
 
-
 目的性:建立多股票批次 ETL 任務摘要，統計成功與失敗 ticker、原始資料筆數、轉換筆數與實際 upsert 影響筆數，提升批次流程可觀察性與除錯能力。
+
+第六階段
+由CLI帶入Extract相關參數
+技術要點:
+使用argparse建立CLI參數解析器
+
+目的性:使用 terminal 傳參數，避免必須修改程式碼才可更換參數測試

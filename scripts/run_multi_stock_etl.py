@@ -1,3 +1,4 @@
+import argparse
 from datetime import date
 
 from extractors.yfinance_extractor import yfinance_extract
@@ -5,6 +6,50 @@ from transformers.daily_price_transformer import daily_price_transform
 from validators.daily_price_validator import validate_daily_prices
 from loaders.daily_price_loader import upsert_daily_prices
 
+def parse_args():
+    # 建立 CLI 參數解析器
+    parser = argparse.ArgumentParser(
+        description="Run multi-ticker daily price ETL."
+    )
+
+    # 指定要處理的股票清單
+    parser.add_argument(
+        "--tickers",
+        nargs="+",
+        default=["TSM", "AAPL", "MSFT", "NVDA"],
+        help="Ticker list, example: --tickers TSM AAPL MSFT NVDA",
+    )
+
+    # 指定 backfill 起始日
+    parser.add_argument(
+        "--start-date",
+        default=None,
+        help="Backfill start date, format: YYYY-MM-DD",
+    )
+
+    # 指定 backfill 結束日
+    parser.add_argument(
+        "--end-date",
+        default=None,
+        help="Backfill end date, format: YYYY-MM-DD. If start-date is set but end-date is missing, defaults to today.",
+    )
+
+    # 指定 yfinance period，未使用 start-date 時生效
+    parser.add_argument(
+        "--period",
+        default="1mo",
+        help="yfinance period, used when start-date is not provided.",
+    )
+
+    # 指定資料頻率
+    parser.add_argument(
+        "--interval",
+        default="1d",
+        help="yfinance interval, example: 1d",
+    )
+
+    # 回傳解析後的 CLI 參數
+    return parser.parse_args()
 
 def print_etl_summary(summary):
     # 印出批次任務摘要標題
@@ -14,6 +59,9 @@ def print_etl_summary(summary):
         print('Extract起始日:', summary['start_date'])
     if summary['end_date']:
         print('Extract結束日:', summary['end_date'])
+
+    print(f"Period: {summary['period']}")
+    print(f"Interval: {summary['interval']}")
 
     # 顯示本次預計處理的 ticker 數量
     print(f"Total tickers: {summary['total_tickers']}")
@@ -48,20 +96,27 @@ def print_etl_summary(summary):
 
 
 def main():
-    # 建立本次批次 ETL 要處理的 ticker 清單
-    tickers = ["TSM", "FAKE123", "AAPL", "MSFT", "NVDA"]
+    # 帶入CLI參數
+    args = parse_args()
+    tickers = args.tickers
+    start_date = args.start_date
+    end_date = args.end_date
+    period = args.period
+    interval = args.interval
 
-    
-
-    # Extract：逐支 ticker 抓取 yfinance 原始資料
-    start_date = "2026-01-01"
-    end_date = ""
+    # # 建立本次批次 ETL 要處理的 ticker 清單
+    # tickers = ["TSM", "AAPL", "MSFT", "NVDA"]
+    # # Extract：逐支 ticker 抓取 yfinance 原始資料
+    # start_date = "2026-01-01"
+    # end_date = "2026-06-04"
     effective_end_date = end_date or date.today().strftime("%Y-%m-%d")
 
     dfs, failed_tickers = yfinance_extract(
         tickers=tickers,
         start_date=start_date,
         end_date=effective_end_date,
+        period=period,
+        interval=interval,
     )
     # 建立本次 ETL 任務摘要
     summary = {
@@ -73,6 +128,8 @@ def main():
         "affected_rows": 0,
         "start_date": start_date,
         "end_date": effective_end_date,
+        "period": period,
+        "interval": interval,
     }
 
     # 記錄 Extract 失敗 ticker

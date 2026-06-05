@@ -99,5 +99,5 @@ def upsert_daily_prices(df):
         # 將 PostgreSQL RETURNING 回傳的資料轉成 list[dict]
         affected_rows = result.mappings().all()
 
-    # 回傳受影響筆數，方便主流程確認結果
+    # 回傳實際新增或更新的資料列，方便主流程檢查結果
     return affected_rows

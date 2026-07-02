@@ -8,11 +8,14 @@ def upsert_technical_indicators(df):
     # 空 DataFrame 不進行寫入，避免產生無意義 SQL
     if df.empty:
         return 0
+    
+    # 將 Pandas NaN 轉成 None，讓資料庫儲存為 SQL NULL
+    clean_df = df.astype(object).where(df.notna(), None)
 
     # 將 DataFrame 轉成 list[dict]，方便 SQLAlchemy 批次寫入
     # orient="records"是 Pandas 內建的一個參數設定值，用來決定轉換後的資料型態
     # records會將每一列資料轉換為一個dict 裝在list中
-    records = df.to_dict(orient="records")
+    records = clean_df.to_dict(orient="records")
 
     # 取得 TechnicalIndicator table 物件
     table = TechnicalIndicator.__table__
